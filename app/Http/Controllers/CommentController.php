@@ -25,7 +25,8 @@ class CommentController extends Controller
         }
 
         $comments = $post->comments()
-            ->with('user:id,name,avatar')
+            ->whereNull('parent_id')
+            ->with(['user:id,name,avatar', 'replies.user:id,name,avatar'])
             ->latest()
             ->paginate(10);
 
@@ -46,12 +47,32 @@ class CommentController extends Controller
             }
         }
 
-        $validated = $request->validate([
+        $rules = [
             'content' => 'required|string|max:1000',
-        ], [
+            'parent_id' => 'nullable|integer|exists:comments,id',
+        ];
+        if (($post->post_type ?? 'exchange') === 'exchange') {
+            $rules['rating'] = 'nullable|integer|min:1|max:5';
+        } else {
+            $rules['rating'] = 'prohibited';
+        }
+
+        $validated = $request->validate($rules, [
             'content.required' => 'กรุณากรอกข้อความคอมเมนต์',
             'content.max' => 'คอมเมนต์ต้องไม่เกิน 1000 ตัวอักษร',
+            'rating.min' => 'คะแนนต้องอย่างน้อย 1 ดาว',
+            'rating.max' => 'คะแนนต้องไม่เกิน 5 ดาว',
         ]);
+
+        if (!empty($validated['parent_id'])) {
+            $parent = Comment::whereKey($validated['parent_id'])
+                ->where('exchange_post_id', $post->id)
+                ->whereNull('parent_id')
+                ->exists();
+            if (!$parent) {
+                return response()->json(['message' => 'ไม่พบความคิดเห็นหลักในโพสต์นี้'], 422);
+            }
+        }
 
         $comment = new Comment($validated);
         $comment->user_id = $request->user()->id;
@@ -73,11 +94,20 @@ class CommentController extends Controller
             return response()->json(['message' => 'คุณไม่มีสิทธิ์แก้ไขคอมเมนต์นี้'], 403);
         }
 
-        $validated = $request->validate([
+        $rules = [
             'content' => 'required|string|max:1000',
-        ], [
+        ];
+        if (($comment->exchangePost->post_type ?? 'exchange') === 'exchange') {
+            $rules['rating'] = 'sometimes|nullable|integer|min:1|max:5';
+        } else {
+            $rules['rating'] = 'prohibited';
+        }
+
+        $validated = $request->validate($rules, [
             'content.required' => 'กรุณากรอกข้อความคอมเมนต์',
             'content.max' => 'คอมเมนต์ต้องไม่เกิน 1000 ตัวอักษร',
+            'rating.min' => 'คะแนนต้องอย่างน้อย 1 ดาว',
+            'rating.max' => 'คะแนนต้องไม่เกิน 5 ดาว',
         ]);
 
         $comment->update($validated);

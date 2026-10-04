@@ -10,9 +10,11 @@ class ExchangePost extends Model
     use HasFactory;
 
     protected $fillable = [
+        'post_type',
         'category_id',
         'title',
         'description',
+        'gadget_name',
         'condition_percent',
         'looking_for',
     ];

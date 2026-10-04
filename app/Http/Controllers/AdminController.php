@@ -21,12 +21,15 @@ class AdminController extends Controller
             'banned_users' => User::where('status', 'banned')->count(),
             'new_users_7_days' => User::where('created_at', '>=', now()->subDays(7))->count(), // [เพิ่มใหม่]
             'total_posts' => ExchangePost::count(),
+            'exchange_posts' => ExchangePost::where('post_type', 'exchange')->count(),
+            'discussion_posts' => ExchangePost::where('post_type', 'discussion')->count(),
             'open_posts' => ExchangePost::where('status', 'open')->count(),
             'pending_posts' => ExchangePost::where('status', 'pending')->count(), // [เพิ่มใหม่]
             'total_reviews' => Review::count(),
             'total_comments' => Comment::count(),
             'total_likes' => Like::count(), // [เพิ่มใหม่]
             'average_rating' => round(Review::avg('rating') ?? 0, 2),
+            'average_post_rating' => round(Comment::whereNotNull('rating')->avg('rating') ?? 0, 2),
             'pending_reports' => Report::where('status', 'pending')->count(),
             // [เพิ่มใหม่] จำนวนโพสต์แยกตามหมวดหมู่ ไว้ทำกราฟในหน้าแอดมิน
             'posts_by_category' => ExchangePost::selectRaw('category_id, count(*) as total')
@@ -141,6 +144,11 @@ class AdminController extends Controller
     {
         $query = ExchangePost::with(['user:id,name,email', 'category']);
 
+        if ($request->filled('post_type')) {
+            $request->validate(['post_type' => 'in:exchange,discussion']);
+            $query->where('post_type', $request->post_type);
+        }
+
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
@@ -153,7 +161,9 @@ class AdminController extends Controller
             $keyword = $request->keyword;
             $query->where(function ($q) use ($keyword) {
                 $q->where('title', 'like', '%' . $keyword . '%')
-                  ->orWhere('description', 'like', '%' . $keyword . '%');
+                                    ->orWhere('description', 'like', '%' . $keyword . '%')
+                                    ->orWhere('looking_for', 'like', '%' . $keyword . '%')
+                                    ->orWhere('gadget_name', 'like', '%' . $keyword . '%');
             });
         }
 

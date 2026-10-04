@@ -9,8 +9,8 @@ class Comment extends Model
 {
     use HasFactory;
 
-    // $fillable ไม่รวม user_id และ exchange_post_id (กำหนดจากฝั่งเซิร์ฟเวอร์)
-    protected $fillable = ['content'];
+    // Ownership and post relationship are assigned by the server.
+    protected $fillable = ['content', 'rating', 'parent_id'];
 
     // คอมเมนต์เป็นของผู้ใช้งาน 1 คน
     public function user()
@@ -22,5 +22,15 @@ class Comment extends Model
     public function exchangePost()
     {
         return $this->belongsTo(ExchangePost::class);
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(Comment::class, 'parent_id');
+    }
+
+    public function replies()
+    {
+        return $this->hasMany(Comment::class, 'parent_id')->latest();
     }
 }

@@ -16,15 +16,21 @@ class ExchangePostController extends Controller
         $currentUser = $request->user('sanctum');
 
         $query = ExchangePost::with(['user:id,name,email,avatar', 'category', 'images'])
-            ->withCount('likes')
+            ->withCount(['likes', 'comments'])
             ->where('status', 'open');
+
+        if ($request->filled('post_type')) {
+            $request->validate(['post_type' => 'in:exchange,discussion']);
+            $query->where('post_type', $request->post_type);
+        }
 
         if ($request->filled('keyword')) {
             $keyword = $request->keyword;
             $query->where(function ($q) use ($keyword) {
                 $q->where('title', 'like', '%' . $keyword . '%')
                     ->orWhere('description', 'like', '%' . $keyword . '%')
-                    ->orWhere('looking_for', 'like', '%' . $keyword . '%');
+                    ->orWhere('looking_for', 'like', '%' . $keyword . '%')
+                    ->orWhere('gadget_name', 'like', '%' . $keyword . '%');
             });
         }
 
@@ -53,26 +59,7 @@ class ExchangePostController extends Controller
     // 2. สร้างโพสต์แลกเปลี่ยนใหม่ + อัปโหลดรูปภาพหลายรูป
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'condition_percent' => 'required|integer|min:0|max:100',
-            'looking_for' => 'nullable|string',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048'
-        ], [
-            'category_id.required' => 'กรุณาเลือกหมวดหมู่สินค้า',
-            'category_id.exists' => 'ไม่พบหมวดหมู่ที่ระบุ',
-            'title.required' => 'กรุณากรอกชื่อหัวข้อโพสต์',
-            'description.required' => 'กรุณากรอกรายละเอียดสินค้า',
-            'condition_percent.required' => 'กรุณาระบุสภาพสินค้า',
-            'condition_percent.min' => 'สภาพสินค้าต้องไม่ต่ำกว่า 0%',
-            'condition_percent.max' => 'สภาพสินค้าต้องไม่เกิน 100%',
-            'images.*.image' => 'ต้องอัปโหลดเป็นไฟล์รูปภาพเท่านั้น',
-            'images.*.max' => 'ขนาดรูปภาพต้องไม่เกิน 2MB'
-        ]);
-
-        $post = new ExchangePost($validated);
+        $post = new ExchangePost($this->validatedPostData($request));
         $post->user_id = $request->user()->id;
         $post->status = $request->user()->role === 'admin' ? 'open' : 'pending';
         $post->save();
@@ -94,14 +81,14 @@ class ExchangePostController extends Controller
         ], 201);
     }
 
-    // 3. ดูรายละเอียดโพสต์รายตัว (ปรับปรุงการดึงคอมเมนต์หลักและคอมเมนต์ตอบกลับพร้อมข้อมูล User)
+    // 3. ดูรายละเอียดโพสต์รายตัวพร้อมคอมเมนต์แบบรายการ
     public function show(Request $request, $id)
     {
         $post = ExchangePost::with([
                 'user:id,name,email,avatar',
                 'category',
                 'images',
-                // ดึงเฉพาะคอมเมนต์หลัก (parent_id เป็น null) และพ่วง replies พร้อม user ของฝั่ง replies ด้วย
+                // คอมเมนต์เป็นรายการแบบ flat ไม่มี parent/reply columns
                 'comments' => function ($query) {
                     $query->whereNull('parent_id')
                           ->with(['user:id,name,email,avatar', 'replies.user:id,name,email,avatar'])
@@ -138,26 +125,14 @@ class ExchangePostController extends Controller
             return response()->json(['message' => 'คุณไม่มีสิทธิ์แก้ไขโพสต์นี้'], 403);
         }
 
-        $validated = $request->validate([
-            'category_id' => 'required|exists:categories,id',
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'condition_percent' => 'required|integer|min:0|max:100',
-            'looking_for' => 'nullable|string',
+        $validated = $this->validatedPostData($request, $post->post_type ?? 'exchange');
+        $validated['status'] = $request->validate([
             'status' => 'nullable|in:open,closed',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048'
-        ], [
-            'condition_percent.min' => 'สภาพสินค้าต้องไม่ต่ำกว่า 0%',
-            'condition_percent.max' => 'สภาพสินค้าต้องไม่เกิน 100%',
-            'status.in' => 'สถานะไม่ถูกต้อง',
-        ]);
+        ], ['status.in' => 'สถานะไม่ถูกต้อง'])['status'] ?? $post->status;
 
         $post->update($validated);
-
-        if ($request->filled('status')) {
-            $post->status = $request->status;
-            $post->save();
-        }
+        $post->status = $validated['status'];
+        $post->save();
 
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $file) {
@@ -268,5 +243,50 @@ class ExchangePostController extends Controller
         $comment->delete();
 
         return response()->json(['message' => 'ลบความคิดเห็นสำเร็จ']);
+    }
+
+    private function validatedPostData(Request $request, string $defaultType = 'exchange'): array
+    {
+        $postType = $request->input('post_type', $defaultType);
+        $rules = [
+            'post_type' => 'sometimes|required|in:exchange,discussion',
+            'category_id' => 'required|exists:categories,id',
+            'title' => 'required|string|max:255',
+            'description' => 'required|string',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+        ];
+
+        if ($postType === 'discussion') {
+            $rules['gadget_name'] = 'nullable|string|max:255';
+            $rules['condition_percent'] = 'prohibited';
+            $rules['looking_for'] = 'prohibited';
+        } else {
+            $rules['condition_percent'] = 'required|integer|min:0|max:100';
+            $rules['looking_for'] = 'nullable|string';
+            $rules['gadget_name'] = 'prohibited';
+        }
+
+        $validated = $request->validate($rules, [
+            'category_id.required' => 'กรุณาเลือกหมวดหมู่สินค้า',
+            'category_id.exists' => 'ไม่พบหมวดหมู่ที่ระบุ',
+            'title.required' => 'กรุณากรอกชื่อหัวข้อโพสต์',
+            'description.required' => 'กรุณากรอกรายละเอียดโพสต์',
+            'condition_percent.required' => 'กรุณาระบุสภาพสินค้า',
+            'condition_percent.min' => 'สภาพสินค้าต้องไม่ต่ำกว่า 0%',
+            'condition_percent.max' => 'สภาพสินค้าต้องไม่เกิน 100%',
+            'images.*.image' => 'ต้องอัปโหลดเป็นไฟล์รูปภาพเท่านั้น',
+            'images.*.max' => 'ขนาดรูปภาพต้องไม่เกิน 2MB',
+        ]);
+
+        unset($validated['images']);
+        $validated['post_type'] = $postType;
+        if ($postType === 'discussion') {
+            $validated['condition_percent'] = null;
+            $validated['looking_for'] = null;
+        } else {
+            $validated['gadget_name'] = null;
+        }
+
+        return $validated;
     }
 }
