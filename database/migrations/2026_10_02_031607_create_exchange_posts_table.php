@@ -14,14 +14,14 @@ return new class extends Migration
         Schema::create('exchange_posts', function (Blueprint $table) {
             $table->id();
 
-            // Foreign Key อ้างอิงเจ้าของโพสต์ (users) และหมวดหมู่ (categories)
+
             $table->foreignId('user_id')->constrained()->onDelete('restrict');
             $table->foreignId('category_id')->constrained()->onDelete('restrict');
 
-            $table->string('title');                           // ชื่อโพสต์
-            $table->text('description');                       // รายละเอียดอุปกรณ์
-            $table->unsignedTinyInteger('condition_percent');  // สภาพเครื่อง 0-100 (ตรวจช่วงค่าใน Controller)
-            $table->text('looking_for')->nullable();           // สิ่งที่อยากได้ (ไม่บังคับ)
+            $table->string('title');                            
+            $table->text('description');                        
+            $table->unsignedTinyInteger('condition_percent');   
+            $table->text('looking_for')->nullable();            
             $table->enum('status', ['open', 'closed', 'hidden'])->default('open');
             $table->timestamps();
         });

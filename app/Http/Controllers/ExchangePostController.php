@@ -10,13 +10,14 @@ use Illuminate\Support\Facades\Storage;
 
 class ExchangePostController extends Controller
 {
-    // 1. แสดงรายการโพสต์ + ค้นหาคีย์เวิร์ด + กรองหมวดหมู่ + แบ่งหน้า
+
     public function index(Request $request)
     {
         $currentUser = $request->user('sanctum');
 
         $query = ExchangePost::with(['user:id,name,email,avatar', 'category', 'images'])
             ->withCount(['likes', 'comments'])
+            ->whereHas('user')
             ->where('status', 'open');
 
         if ($request->filled('post_type')) {
@@ -56,7 +57,7 @@ class ExchangePostController extends Controller
         return response()->json($posts);
     }
 
-    // 2. สร้างโพสต์แลกเปลี่ยนใหม่ + อัปโหลดรูปภาพหลายรูป
+
     public function store(Request $request)
     {
         $post = new ExchangePost($this->validatedPostData($request));
@@ -75,20 +76,20 @@ class ExchangePostController extends Controller
 
         return response()->json([
             'message' => $post->status === 'pending'
-                ? 'ส่งโพสต์เรียบร้อยแล้ว กรุณารอแอดมินตรวจสอบและอนุมัติ'
-                : 'สร้างโพสต์แลกเปลี่ยนสำเร็จ',
+                ? 'ลงประกาศแล้ว รอทีมงานตรวจสอบก่อนแสดงบนเว็บไซต์'
+                : 'ลงประกาศเรียบร้อยแล้ว',
             'post' => $post->load(['user:id,name,email,avatar', 'category', 'images'])
         ], 201);
     }
 
-    // 3. ดูรายละเอียดโพสต์รายตัวพร้อมคอมเมนต์แบบรายการ
+
     public function show(Request $request, $id)
     {
         $post = ExchangePost::with([
                 'user:id,name,email,avatar',
                 'category',
                 'images',
-                // คอมเมนต์เป็นรายการแบบ flat ไม่มี parent/reply columns
+
                 'comments' => function ($query) {
                     $query->whereNull('parent_id')
                           ->with(['user:id,name,email,avatar', 'replies.user:id,name,email,avatar'])
@@ -97,6 +98,10 @@ class ExchangePostController extends Controller
             ])
             ->withCount('likes')
             ->findOrFail($id);
+
+        if (!$post->user) {
+            abort(404);
+        }
 
         $currentUser = $request->user('sanctum');
 
@@ -116,13 +121,13 @@ class ExchangePostController extends Controller
         return response()->json($post);
     }
 
-    // 4. แก้ไขข้อมูลโพสต์
+
     public function update(Request $request, $id)
     {
         $post = ExchangePost::findOrFail($id);
 
         if ($post->user_id !== $request->user()->id && $request->user()->role !== 'admin') {
-            return response()->json(['message' => 'คุณไม่มีสิทธิ์แก้ไขโพสต์นี้'], 403);
+            return response()->json(['message' => 'คุณไม่มีสิทธิ์แก้ไขประกาศนี้'], 403);
         }
 
         $validated = $this->validatedPostData($request, $post->post_type ?? 'exchange');
@@ -144,30 +149,26 @@ class ExchangePostController extends Controller
         }
 
         return response()->json([
-            'message' => 'อัปเดตข้อมูลโพสต์สำเร็จ',
+            'message' => 'บันทึกการแก้ไขแล้ว',
             'post' => $post->load(['user:id,name,email,avatar', 'category', 'images'])
         ]);
     }
 
-    // 5. ลบโพสต์
+
     public function destroy(Request $request, $id)
     {
-        $post = ExchangePost::with('images')->findOrFail($id);
+        $post = ExchangePost::findOrFail($id);
 
         if ($post->user_id !== $request->user()->id && $request->user()->role !== 'admin') {
-            return response()->json(['message' => 'คุณไม่มีสิทธิ์ลบโพสต์นี้'], 403);
-        }
-
-        foreach ($post->images as $image) {
-            Storage::disk('public')->delete($image->image_path);
+            return response()->json(['message' => 'คุณไม่มีสิทธิ์ลบประกาศนี้'], 403);
         }
 
         $post->delete();
 
-        return response()->json(['message' => 'ลบโพสต์เรียบร้อยแล้ว']);
+        return response()->json(['message' => 'ลบประกาศเรียบร้อยแล้ว']);
     }
 
-    // 6. ดึงโพสต์ทั้งหมดของผู้ใช้ที่ล็อกอินอยู่
+
     public function myPosts(Request $request)
     {
         $posts = ExchangePost::with(['category', 'images'])
@@ -179,7 +180,7 @@ class ExchangePostController extends Controller
         return response()->json($posts);
     }
 
-    // 7. กดไลค์ / ยกเลิกไลค์ (toggle)
+
     public function toggleLike(Request $request, $id)
     {
         $post = ExchangePost::findOrFail($id);
@@ -191,21 +192,21 @@ class ExchangePostController extends Controller
             $existingLike->delete();
             $liked = false;
         } else {
-            Like::create([
-                'user_id' => $userId,
-                'exchange_post_id' => $post->id,
-            ]);
+            $like = new Like();
+            $like->user_id = $userId;
+            $like->exchange_post_id = $post->id;
+            $like->save();
             $liked = true;
         }
 
         return response()->json([
-            'message' => $liked ? 'กดไลค์แล้ว' : 'ยกเลิกไลค์แล้ว',
+            'message' => $liked ? 'กดถูกใจแล้ว' : 'ยกเลิกถูกใจแล้ว',
             'liked' => $liked,
             'likes_count' => $post->likes()->count(),
         ]);
     }
 
-    // 8. จัดการคอมเมนต์และตอบกลับ
+
     public function storeComment(Request $request, $id)
     {
         $request->validate([
@@ -222,16 +223,16 @@ class ExchangePostController extends Controller
             'parent_id'        => $request->parent_id ?? null,
         ]);
 
-        // โหลดข้อมูล user และ replies (ถ้ามี) กลับไปให้ฝั่ง React
+
         $comment->load(['user:id,name,email,avatar', 'replies.user:id,name,email,avatar']);
 
         return response()->json([
-            'message' => 'เพิ่มความคิดเห็นสำเร็จ',
+            'message' => 'แสดงความคิดเห็นแล้ว',
             'comment' => $comment
         ], 201);
     }
 
-    // 9. ลบความคิดเห็น
+
     public function destroyComment(Request $request, $commentId)
     {
         $comment = Comment::findOrFail($commentId);
@@ -267,15 +268,15 @@ class ExchangePostController extends Controller
         }
 
         $validated = $request->validate($rules, [
-            'category_id.required' => 'กรุณาเลือกหมวดหมู่สินค้า',
-            'category_id.exists' => 'ไม่พบหมวดหมู่ที่ระบุ',
-            'title.required' => 'กรุณากรอกชื่อหัวข้อโพสต์',
-            'description.required' => 'กรุณากรอกรายละเอียดโพสต์',
-            'condition_percent.required' => 'กรุณาระบุสภาพสินค้า',
-            'condition_percent.min' => 'สภาพสินค้าต้องไม่ต่ำกว่า 0%',
-            'condition_percent.max' => 'สภาพสินค้าต้องไม่เกิน 100%',
-            'images.*.image' => 'ต้องอัปโหลดเป็นไฟล์รูปภาพเท่านั้น',
-            'images.*.max' => 'ขนาดรูปภาพต้องไม่เกิน 2MB',
+            'category_id.required' => 'กรุณาเลือกหมวดหมู่',
+            'category_id.exists' => 'ไม่พบหมวดหมู่ที่เลือก',
+            'title.required' => 'กรุณากรอกหัวข้อประกาศ',
+            'description.required' => 'กรุณากรอกรายละเอียด',
+            'condition_percent.required' => 'กรุณาระบุสภาพอุปกรณ์',
+            'condition_percent.min' => 'สภาพต้องไม่ต่ำกว่า 0%',
+            'condition_percent.max' => 'สภาพต้องไม่เกิน 100%',
+            'images.*.image' => 'ไฟล์ที่เลือกต้องเป็นรูปภาพ',
+            'images.*.max' => 'รูปภาพต้องมีขนาดไม่เกิน 2MB',
         ]);
 
         unset($validated['images']);

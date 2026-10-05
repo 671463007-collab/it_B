@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 
 class CommentController extends Controller
 {
-    // ดูคอมเมนต์ทั้งหมดของโพสต์ (ใครก็ดูได้ ถ้าโพสต์เป็น open)
+
     public function index(Request $request, $postId)
     {
         $post = ExchangePost::findOrFail($postId);
@@ -33,7 +33,7 @@ class CommentController extends Controller
         return response()->json($comments);
     }
 
-    // เพิ่มคอมเมนต์ใต้โพสต์ (ต้องล็อกอิน และโพสต์ต้องเป็น open ยกเว้นเจ้าของ/แอดมิน)
+
     public function store(Request $request, $postId)
     {
         $post = ExchangePost::findOrFail($postId);
@@ -58,8 +58,8 @@ class CommentController extends Controller
         }
 
         $validated = $request->validate($rules, [
-            'content.required' => 'กรุณากรอกข้อความคอมเมนต์',
-            'content.max' => 'คอมเมนต์ต้องไม่เกิน 1000 ตัวอักษร',
+            'content.required' => 'กรุณาเขียนความคิดเห็น',
+            'content.max' => 'ความคิดเห็นต้องไม่เกิน 1,000 ตัวอักษร',
             'rating.min' => 'คะแนนต้องอย่างน้อย 1 ดาว',
             'rating.max' => 'คะแนนต้องไม่เกิน 5 ดาว',
         ]);
@@ -70,7 +70,7 @@ class CommentController extends Controller
                 ->whereNull('parent_id')
                 ->exists();
             if (!$parent) {
-                return response()->json(['message' => 'ไม่พบความคิดเห็นหลักในโพสต์นี้'], 422);
+                return response()->json(['message' => 'ไม่พบความคิดเห็นที่ต้องการตอบกลับ'], 422);
             }
         }
 
@@ -80,18 +80,18 @@ class CommentController extends Controller
         $comment->save();
 
         return response()->json([
-            'message' => 'เพิ่มคอมเมนต์สำเร็จ',
+            'message' => 'แสดงความคิดเห็นแล้ว',
             'comment' => $comment->load('user:id,name,avatar'),
         ], 201);
     }
 
-    // แก้ไขคอมเมนต์ (เฉพาะเจ้าของเท่านั้น)
+
     public function update(Request $request, $id)
     {
         $comment = Comment::findOrFail($id);
 
         if ($comment->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'คุณไม่มีสิทธิ์แก้ไขคอมเมนต์นี้'], 403);
+            return response()->json(['message' => 'คุณไม่มีสิทธิ์แก้ไขความคิดเห็นนี้'], 403);
         }
 
         $rules = [
@@ -104,8 +104,8 @@ class CommentController extends Controller
         }
 
         $validated = $request->validate($rules, [
-            'content.required' => 'กรุณากรอกข้อความคอมเมนต์',
-            'content.max' => 'คอมเมนต์ต้องไม่เกิน 1000 ตัวอักษร',
+            'content.required' => 'กรุณาเขียนความคิดเห็น',
+            'content.max' => 'ความคิดเห็นต้องไม่เกิน 1,000 ตัวอักษร',
             'rating.min' => 'คะแนนต้องอย่างน้อย 1 ดาว',
             'rating.max' => 'คะแนนต้องไม่เกิน 5 ดาว',
         ]);
@@ -113,22 +113,22 @@ class CommentController extends Controller
         $comment->update($validated);
 
         return response()->json([
-            'message' => 'แก้ไขคอมเมนต์เรียบร้อยแล้ว',
+            'message' => 'แก้ไขความคิดเห็นแล้ว',
             'comment' => $comment->load('user:id,name,avatar'),
         ]);
     }
 
-    // ลบคอมเมนต์ (เจ้าของ หรือ Admin)
+
     public function destroy(Request $request, $id)
     {
         $comment = Comment::findOrFail($id);
 
         if ($comment->user_id !== $request->user()->id && $request->user()->role !== 'admin') {
-            return response()->json(['message' => 'คุณไม่มีสิทธิ์ลบคอมเมนต์นี้'], 403);
+            return response()->json(['message' => 'คุณไม่มีสิทธิ์ลบความคิดเห็นนี้'], 403);
         }
 
         $comment->delete();
 
-        return response()->json(['message' => 'ลบคอมเมนต์เรียบร้อยแล้ว']);
+        return response()->json(['message' => 'ลบความคิดเห็นแล้ว']);
     }
 }

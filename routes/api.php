@@ -11,8 +11,6 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\ReviewController;
 use Illuminate\Support\Facades\Route;
 
-// --- 1. เส้นทางสาธารณะ ---
-// [เพิ่มใหม่] throttle:5,1 = จำกัด 5 ครั้งต่อ 1 นาที กัน Brute Force
 Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
 
@@ -24,10 +22,8 @@ Route::get('/exchange-posts/{id}/comments', [CommentController::class, 'index'])
 Route::get('/reviews', [ReviewController::class, 'index']);
 Route::get('/reviews/{id}', [ReviewController::class, 'show']);
 
-// [เพิ่มใหม่] โปรไฟล์สาธารณะของผู้ใช้คนอื่น
 Route::get('/users/{id}', [ProfileController::class, 'publicShow']);
 
-// --- 2. เส้นทางที่ต้องยืนยันตัวตน ---
 Route::middleware(['auth:sanctum', 'not_banned'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
@@ -37,7 +33,7 @@ Route::middleware(['auth:sanctum', 'not_banned'])->group(function () {
     Route::post('/exchange-posts', [ExchangePostController::class, 'store']);
     Route::post('/exchange-posts/{id}', [ExchangePostController::class, 'update']);
     Route::delete('/exchange-posts/{id}', [ExchangePostController::class, 'destroy']);
-    // [เพิ่มใหม่] กดไลค์ / ยกเลิกไลค์
+
     Route::post('/exchange-posts/{id}/like', [ExchangePostController::class, 'toggleLike']);
 
     Route::post('/exchange-posts/{id}/comments', [CommentController::class, 'store']);
@@ -45,7 +41,7 @@ Route::middleware(['auth:sanctum', 'not_banned'])->group(function () {
     Route::delete('/comments/{id}', [CommentController::class, 'destroy']);
 
     Route::post('/reviews', [ReviewController::class, 'store']);
-    // [เพิ่มใหม่] แก้ไขรีวิวตัวเอง
+
     Route::put('/reviews/{id}', [ReviewController::class, 'update']);
     Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
 
@@ -57,24 +53,25 @@ Route::middleware(['auth:sanctum', 'not_banned'])->group(function () {
     Route::get('/conversations', [MessageController::class, 'conversations']);
 
     Route::post('/reports', [ReportController::class, 'store']);
+    Route::get('/my/reports', [ReportController::class, 'myReports']);
 
-    // --- 3. เส้นทางเฉพาะผู้ดูแลระบบ ---
     Route::middleware('is_admin')->prefix('admin')->group(function () {
         Route::get('/dashboard', [AdminController::class, 'dashboard']);
         Route::get('/users', [AdminController::class, 'users']);
+        Route::delete('/users/{id}', [AdminController::class, 'deleteUser']);
+        Route::patch('/users/{id}/restore', [AdminController::class, 'restoreUser']);
         Route::patch('/users/{id}/toggle-status', [AdminController::class, 'toggleUserStatus']);
         Route::get('/reports', [AdminController::class, 'reports']);
         Route::patch('/reports/{id}/status', [AdminController::class, 'updateReportStatus']);
         Route::patch('/exchange-posts/{id}/status', [AdminController::class, 'updatePostStatus']);
 
-        // [เพิ่มใหม่] จัดการหมวดหมู่
         Route::get('/categories', [CategoryController::class, 'adminIndex']);
         Route::post('/categories', [CategoryController::class, 'store']);
         Route::put('/categories/{id}', [CategoryController::class, 'update']);
         Route::delete('/categories/{id}', [CategoryController::class, 'destroy']);
 
-        // [เพิ่มใหม่] ดูโพสต์/คอมเมนต์ทั้งหมดในระบบ
         Route::get('/exchange-posts', [AdminController::class, 'posts']);
+        Route::patch('/exchange-posts/{id}/restore', [AdminController::class, 'restorePost']);
         Route::get('/comments', [AdminController::class, 'comments']);
     });
 });

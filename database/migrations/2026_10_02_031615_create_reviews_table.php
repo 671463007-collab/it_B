@@ -15,9 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('restrict');
             $table->foreignId('category_id')->constrained()->onDelete('restrict');
-            $table->string('gadget_name');                 // ชื่ออุปกรณ์ที่รีวิว
-            $table->unsignedTinyInteger('rating');         // 1-5 ดาว (ตรวจช่วงค่าใน Controller)
-            $table->text('content');                       // เนื้อหารีวิว
+            $table->string('gadget_name');                  
+            $table->unsignedTinyInteger('rating');          
+            $table->text('content');                        
             $table->timestamps();
         });
     }

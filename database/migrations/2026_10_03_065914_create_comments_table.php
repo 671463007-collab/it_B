@@ -15,10 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('exchange_post_id')->constrained()->onDelete('cascade');
-            $table->text('content');                                  // เนื้อหาคอมเมนต์
+            $table->text('content');                                   
             $table->timestamps();
 
-            $table->index(['exchange_post_id', 'created_at']);        // ดึงคอมเมนต์ของโพสต์เรียงตามเวลาเร็วขึ้น
+            $table->index(['exchange_post_id', 'created_at']);         
         });
     }
 

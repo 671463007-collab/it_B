@@ -18,7 +18,7 @@ class CategoryFactory extends Factory
     public function definition(): array
     {
         return [
-            // unique() = สุ่มไม่ซ้ำ ใช้ชื่อหมวดจริงของเว็บเรา (มี 6 ชื่อ จึงสร้างได้ไม่เกิน 6 หมวด)
+
             'name' => fake()->unique()->randomElement([
                 'การ์ดจอ',
                 'เมาส์',

@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('messages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('sender_id')->constrained('users')->onDelete('restrict');     // ผู้ส่ง
-            $table->foreignId('receiver_id')->constrained('users')->onDelete('restrict');   // ผู้รับ
-            $table->foreignId('exchange_post_id')->nullable()->constrained()->onDelete('set null'); // คุยเรื่องโพสต์ไหน
-            $table->text('message');                                                         // ข้อความ
-            $table->boolean('is_read')->default(false);                                      // อ่านแล้วหรือยัง (ใช้ทำจุดแจ้งเตือน)
+            $table->foreignId('sender_id')->constrained('users')->onDelete('restrict');      
+            $table->foreignId('receiver_id')->constrained('users')->onDelete('restrict');    
+            $table->foreignId('exchange_post_id')->nullable()->constrained()->onDelete('set null');  
+            $table->text('message');                                                          
+            $table->boolean('is_read')->default(false);                                       
             $table->timestamps();
         });
     }

@@ -9,9 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('phone', 20)->nullable()->after('avatar');            // เบอร์โทรศัพท์
-            $table->string('line_id', 50)->nullable()->after('phone');           // Line ID
-            $table->string('facebook_contact')->nullable()->after('line_id');    // ลิงก์/ชื่อ Facebook
+            $table->string('phone', 20)->nullable()->after('avatar');             
+            $table->string('line_id', 50)->nullable()->after('phone');            
+            $table->string('facebook_contact')->nullable()->after('line_id');     
         });
     }
 

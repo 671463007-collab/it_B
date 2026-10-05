@@ -9,7 +9,7 @@ class Review extends Model
 {
     use HasFactory;
 
-    // $fillable ไม่รวม user_id
+
     protected $fillable = [
         'category_id',
         'gadget_name',
@@ -17,13 +17,13 @@ class Review extends Model
         'content',
     ];
 
-    // รีวิวเป็นของผู้ใช้งาน 1 คน
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    // รีวิวอยู่ในหมวดหมู่ 1 หมวดหมู่
+
     public function category()
     {
         return $this->belongsTo(Category::class);

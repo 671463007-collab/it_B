@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('post_images', function (Blueprint $table) {
             $table->id();
             $table->foreignId('exchange_post_id')->constrained()->onDelete('cascade');
-            $table->string('image_path');    // path ของไฟล์รูป เช่น posts/abc.jpg
+            $table->string('image_path');     
         });
     }
 

@@ -19,7 +19,7 @@ class PostImageFactory extends Factory
     {
         return [
             'exchange_post_id' => \App\Models\ExchangePost::factory(),
-            'image_path' => 'posts/placeholder.jpg',   // path จำลอง ไฟล์จริงจะมาตอนทำระบบอัปโหลด
+            'image_path' => 'posts/placeholder.jpg',    
         ];
     }
 }

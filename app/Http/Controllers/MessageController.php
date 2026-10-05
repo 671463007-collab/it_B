@@ -7,12 +7,12 @@ use Illuminate\Http\Request;
 
 class MessageController extends Controller
 {
-    // [เพิ่มใหม่] ดึงรายชื่อคู่สนทนาทั้งหมด พร้อมข้อความล่าสุด (กล่องข้อความ/Inbox)
+
     public function conversations(Request $request)
     {
         $myId = $request->user()->id;
 
-        // ดึงข้อความทุกเส้นที่เกี่ยวข้องกับเรา เรียงใหม่สุดไว้ก่อน
+
         $messages = Message::with(['sender:id,name,avatar', 'receiver:id,name,avatar'])
             ->where('sender_id', $myId)
             ->orWhere('receiver_id', $myId)
@@ -22,10 +22,10 @@ class MessageController extends Controller
         $conversations = [];
 
         foreach ($messages as $message) {
-            // หา id ของอีกฝ่าย (ไม่ใช่ตัวเราเอง)
+
             $otherId = $message->sender_id === $myId ? $message->receiver_id : $message->sender_id;
 
-            // เก็บเฉพาะข้อความล่าสุดของแต่ละคู่สนทนา (ตัวแรกที่เจอ เพราะเรียงจากใหม่สุดไว้แล้ว)
+
             if (!isset($conversations[$otherId])) {
                 $otherUser = $message->sender_id === $myId ? $message->receiver : $message->sender;
 
@@ -78,12 +78,12 @@ class MessageController extends Controller
             'exchange_post_id' => 'nullable|exists:exchange_posts,id',
             'message' => 'required|string',
         ], [
-            'receiver_id.required' => 'กรุณาระบุผู้รับข้อความ',
+            'receiver_id.required' => 'กรุณาเลือกผู้รับข้อความ',
             'message.required' => 'กรุณากรอกข้อความ',
         ]);
 
         if ($validated['receiver_id'] == $request->user()->id) {
-            return response()->json(['message' => 'ไม่สามารถส่งข้อความหาตัวเองได้'], 422);
+            return response()->json(['message' => 'ส่งข้อความหาตัวเองไม่ได้'], 422);
         }
 
         $message = new Message($validated);
@@ -92,7 +92,7 @@ class MessageController extends Controller
         $message->save();
 
         return response()->json([
-            'message' => 'ส่งข้อความสำเร็จ',
+            'message' => 'ส่งข้อความแล้ว',
             'data' => $message->load(['sender:id,name', 'receiver:id,name'])
         ], 201);
     }

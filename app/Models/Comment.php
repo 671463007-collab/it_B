@@ -9,16 +9,16 @@ class Comment extends Model
 {
     use HasFactory;
 
-    // Ownership and post relationship are assigned by the server.
+
     protected $fillable = ['content', 'rating', 'parent_id'];
 
-    // คอมเมนต์เป็นของผู้ใช้งาน 1 คน
+
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    // คอมเมนต์อยู่ใต้โพสต์ 1 โพสต์
+
     public function exchangePost()
     {
         return $this->belongsTo(ExchangePost::class);

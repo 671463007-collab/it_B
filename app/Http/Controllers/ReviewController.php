@@ -32,12 +32,12 @@ class ReviewController extends Controller
             'rating' => 'required|integer|min:1|max:5',
             'content' => 'required|string',
         ], [
-            'category_id.required' => 'กรุณาเลือกหมวดหมู่สินค้า',
+            'category_id.required' => 'กรุณาเลือกหมวดหมู่',
             'gadget_name.required' => 'กรุณาระบุชื่ออุปกรณ์',
-            'rating.required' => 'กรุณาให้คะแนนรีวิว',
-            'rating.min' => 'คะแนนต้องอย่างน้อย 1 ดาว',
-            'rating.max' => 'คะแนนต้องไม่เกิน 5 ดาว',
-            'content.required' => 'กรุณากรอกเนื้อหารีวิว',
+            'rating.required' => 'กรุณาให้คะแนน',
+            'rating.min' => 'คะแนนต่ำสุดคือ 1 ดาว',
+            'rating.max' => 'คะแนนสูงสุดคือ 5 ดาว',
+            'content.required' => 'กรุณาเขียนรีวิว',
         ]);
 
         $review = new Review($validated);
@@ -45,7 +45,7 @@ class ReviewController extends Controller
         $review->save();
 
         return response()->json([
-            'message' => 'เพิ่มรีวิวสำเร็จ',
+            'message' => 'ส่งรีวิวแล้ว',
             'review' => $review->load(['user:id,name,email,avatar', 'category'])
         ], 201);
     }
@@ -66,10 +66,10 @@ class ReviewController extends Controller
 
         $review->delete();
 
-        return response()->json(['message' => 'ลบรีวิวเรียบร้อยแล้ว']);
+        return response()->json(['message' => 'ลบรีวิวแล้ว']);
     }
 
-    // [เพิ่มใหม่] ดึงรีวิวทั้งหมดของผู้ใช้ที่ล็อกอินอยู่ (สำหรับหน้าโปรไฟล์)
+
     public function myReviews(Request $request)
     {
         $reviews = Review::with('category')

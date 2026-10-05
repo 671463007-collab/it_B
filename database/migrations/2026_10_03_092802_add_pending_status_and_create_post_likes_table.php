@@ -9,18 +9,18 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // 1. เพิ่มสถานะ 'pending' ให้ exchange_posts (รออนุมัติจากแอดมิน)
-        // Laravel ไม่มี helper แก้ enum ตรงๆ ต้องใช้ SQL ดิบ
+
+
         DB::statement("ALTER TABLE exchange_posts MODIFY COLUMN status ENUM('pending', 'open', 'closed', 'hidden') NOT NULL DEFAULT 'pending'");
 
-        // 2. สร้างตาราง post_likes (ระบบไลค์แบบสลับกด)
+
         Schema::create('post_likes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('exchange_post_id')->constrained()->onDelete('cascade');
             $table->timestamps();
 
-            // กันไม่ให้ user คนเดียวกันไลค์โพสต์เดียวกันซ้ำสอง
+
             $table->unique(['user_id', 'exchange_post_id']);
         });
     }

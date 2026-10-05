@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ExchangePost extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'post_type',
@@ -34,13 +35,11 @@ class ExchangePost extends Model
         return $this->hasMany(PostImage::class);
     }
 
-    // [เพิ่มใหม่] 1 โพสต์ มีได้หลายคอมเมนต์
     public function comments()
     {
         return $this->hasMany(Comment::class);
     }
 
-    // [เพิ่มใหม่] 1 โพสต์ มีได้หลายไลค์ (จากหลาย user)
     public function likes()
     {
         return $this->hasMany(Like::class);

@@ -11,7 +11,7 @@ class NotBannedMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        // ถ้าล็อกอินอยู่และถูกแบน ให้หยุดทันที
+
         if (Auth::check() && Auth::user()->status === 'banned') {
             return response()->json([
                 'message' => 'บัญชีของคุณถูกระงับการใช้งาน',

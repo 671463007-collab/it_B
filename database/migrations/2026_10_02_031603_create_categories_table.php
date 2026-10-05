@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('categories', function (Blueprint $table) {
             $table->id();
-            $table->string('name')->unique();              // ชื่อหมวดหมู่ ห้ามซ้ำ
-            $table->boolean('is_active')->default(true);   // true = แสดง, false = admin ปิดหมวดนี้
-            $table->timestamps();                          // created_at และ updated_at อัตโนมัติ
+            $table->string('name')->unique();               
+            $table->boolean('is_active')->default(true);    
+            $table->timestamps();                           
         });
     }
 

@@ -19,7 +19,7 @@ class ExchangePostFactory extends Factory
     {
         return [
             'user_id' => \App\Models\User::factory(),
-            // สุ่มหมวดหมู่ที่มีอยู่แล้ว (ไม่ใช้ Category::factory() เพราะจะสร้างหมวดใหม่เกิน 6 ชื่อ)
+
             'category_id' => \App\Models\Category::inRandomOrder()->value('id'),
             'title' => fake()->randomElement([
                 'RTX 3060 12GB สภาพสวย',

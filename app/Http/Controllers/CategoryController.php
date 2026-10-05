@@ -26,13 +26,13 @@ class CategoryController extends Controller
             'name' => 'required|string|max:255|unique:categories,name',
         ], [
             'name.required' => 'กรุณากรอกชื่อหมวดหมู่',
-            'name.unique' => 'มีหมวดหมู่นี้อยู่แล้ว',
+            'name.unique' => 'หมวดหมู่นี้มีอยู่แล้ว',
         ]);
 
         $category = Category::create($validated);
 
         return response()->json([
-            'message' => 'เพิ่มหมวดหมู่สำเร็จ',
+            'message' => 'เพิ่มหมวดหมู่แล้ว',
             'category' => $category,
         ], 201);
     }
@@ -46,13 +46,13 @@ class CategoryController extends Controller
             'is_active' => 'nullable|boolean',
         ], [
             'name.required' => 'กรุณากรอกชื่อหมวดหมู่',
-            'name.unique' => 'มีหมวดหมู่นี้อยู่แล้ว',
+            'name.unique' => 'หมวดหมู่นี้มีอยู่แล้ว',
         ]);
 
         $category->update($validated);
 
         return response()->json([
-            'message' => 'แก้ไขหมวดหมู่เรียบร้อยแล้ว',
+            'message' => 'บันทึกหมวดหมู่แล้ว',
             'category' => $category,
         ]);
     }
@@ -63,12 +63,12 @@ class CategoryController extends Controller
 
         if ($category->exchangePosts()->exists() || $category->reviews()->exists()) {
             return response()->json([
-                'message' => 'ไม่สามารถลบหมวดหมู่นี้ได้ เนื่องจากมีโพสต์หรือรีวิวใช้งานอยู่ กรุณาปิดการใช้งานแทน',
+                'message' => 'ลบหมวดหมู่นี้ไม่ได้ เพราะยังมีประกาศหรือรีวิวใช้งานอยู่ ลองปิดหมวดหมู่แทน',
             ], 422);
         }
 
         $category->delete();
 
-        return response()->json(['message' => 'ลบหมวดหมู่เรียบร้อยแล้ว']);
+        return response()->json(['message' => 'ลบหมวดหมู่แล้ว']);
     }
 }
